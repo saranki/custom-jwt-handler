@@ -22,7 +22,7 @@ a custom JWTGrantHandler we retrieve the scope from JWT payload and append it to
  3. Pass the JWT value and generate the access token APIM side
  - curl -i -X POST -H 'Content-Type: application/x-www-form-urlencoded' -u <app_client_id:app_client_secret> -k -d 'grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=value' https://localhost:8244/token
  
- 4. The access token will be generated with as follows with the scope
+ 4. The access token will be generated as follows with the scope
  - {
      "access_token":"access-token",
      "refresh_token":"refresh-token",
