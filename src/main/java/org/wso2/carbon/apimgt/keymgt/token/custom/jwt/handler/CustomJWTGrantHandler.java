@@ -1,9 +1,10 @@
-package com.wso2.test;
+package org.wso2.carbon.apimgt.keymgt.token.custom.jwt.handler;
 
 import com.nimbusds.jwt.SignedJWT;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import net.minidev.json.JSONArray;
 import org.wso2.carbon.identity.oauth2.IdentityOAuth2Exception;
 import org.wso2.carbon.identity.oauth2.grant.jwt.JWTBearerGrantHandler;
 import org.wso2.carbon.identity.oauth2.grant.jwt.JWTConstants;
@@ -11,6 +12,7 @@ import org.wso2.carbon.identity.oauth2.model.RequestParameter;
 import org.wso2.carbon.identity.oauth2.token.OAuthTokenReqMessageContext;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 
 public class CustomJWTGrantHandler extends JWTBearerGrantHandler {
 
@@ -18,7 +20,7 @@ public class CustomJWTGrantHandler extends JWTBearerGrantHandler {
 
     @Override
     public boolean validateScope(OAuthTokenReqMessageContext tokReqMsgCtx) throws IdentityOAuth2Exception {
-
+        
         SignedJWT signedJWT = null;
 
         try {
@@ -26,13 +28,29 @@ public class CustomJWTGrantHandler extends JWTBearerGrantHandler {
         } catch (IdentityOAuth2Exception e) {
             log.error("Couldn't retrieve signed JWT", e);
         }
-        
-        Object scope = signedJWT != null ? signedJWT.getPayload().toJSONObject().get("scope") : null;
-        if (scope != null) {
-            tokReqMsgCtx.setScope(scope.toString().split(" "));
+
+        JSONArray userScopes = (JSONArray)(signedJWT != null ? signedJWT.getPayload().toJSONObject().get("scopes") : null);
+
+        if (userScopes != null) {
+            String[] requestedScopes = tokReqMsgCtx.getOauth2AccessTokenReqDTO().getScope();
+            if (requestedScopes != null) {
+                tokReqMsgCtx.setScope(filterScopes(userScopes, requestedScopes));
+            }
         }
 
+
         return super.validateScope(tokReqMsgCtx);
+    }
+
+    private String[] filterScopes(JSONArray userScopes, String[] requestedScopes) {
+        ArrayList<String> filteredScopes = new ArrayList<String>();
+        for (String requestedScope:requestedScopes) {
+            if (userScopes.toString().contains(requestedScope)){
+                filteredScopes.add(requestedScope);
+            }
+        }
+
+        return filteredScopes.toArray(new String[filteredScopes.size()]);
     }
 
     private SignedJWT getSignedJWT(OAuthTokenReqMessageContext tokReqMsgCtx) throws IdentityOAuth2Exception {
